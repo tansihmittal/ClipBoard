@@ -222,8 +222,8 @@ Edit or delete these and replace them with your own.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/tanishmittal25/ClipboardApp.git
-   cd ClipboardApp
+   git clone https://github.com/tansihmittal/Clipboard.git
+   cd Clipboard
    ```
 
 2. **Open in Xcode**
