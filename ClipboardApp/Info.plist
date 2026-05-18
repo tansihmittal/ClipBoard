@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- Required: menu-bar only app, no Dock icon -->
+	<key>LSUIElement</key>
+	<true/>
+
+	<!-- Required: minimum macOS version -->
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+
+	<!-- Required: Input Monitoring permission dialog string (macOS 12+) -->
+	<key>NSInputMonitoringUsageDescription</key>
+	<string>ClipboardApp needs Input Monitoring to detect snippet triggers (e.g. /addr) as you type in any app, so it can expand them automatically.</string>
+
+	<!-- Required: Accessibility permission dialog string -->
+	<key>NSAccessibilityUsageDescription</key>
+	<string>ClipboardApp needs Accessibility access to inject keystrokes (backspace + paste) when expanding text snippets in other apps.</string>
+
+	<!-- Required: allow the app to read the system pasteboard -->
+	<key>NSAppleEventsUsageDescription</key>
+	<string>ClipboardApp monitors the clipboard to save copied items.</string>
+
+	<!-- Required for Hardened Runtime: allow JIT / unsigned memory -->
+	<!-- These are NOT needed here — entitlements file handles sandbox exceptions -->
+
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2025 Tanish Mittal. All rights reserved.</string>
+
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+</dict>
+</plist>

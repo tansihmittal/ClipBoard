@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	    Hardened Runtime entitlements for ClipboardApp.
+	    
+	    NOTE: This app uses CGEvent injection (to send backspace + Cmd-V),
+	    which requires Accessibility permission at runtime. It does NOT need
+	    the com.apple.security.temporary-exception.apple-events entitlement
+	    unless you target other specific apps via AppleScript.
+	    
+	    The app must NOT be sandboxed — sandbox blocks:
+	      • NSEvent.addGlobalMonitorForEvents (Input Monitoring)
+	      • CGEvent injection via .cghidEventTap
+	      • NSPasteboard polling (blocked under strict sandbox)
+	    
+	    To distribute outside the Mac App Store, leave sandboxing OFF and
+	    sign with a Developer ID certificate (Hardened Runtime is required
+	    for notarization but sandbox is not).
+	-->
+
+	<!-- Hardened Runtime: allow Apple Events (needed for NSWorkspace.open) -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+
+	<!--
+	    Do NOT add com.apple.security.app-sandbox here.
+	    Sandboxing would break global event monitoring and CGEvent injection.
+	-->
+</dict>
+</plist>
