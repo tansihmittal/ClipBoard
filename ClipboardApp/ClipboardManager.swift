@@ -358,13 +358,6 @@ final class ClipboardManager: ObservableObject {
         snippetIndex[input.lowercased()]
     }
 
-    /// Prefix suggestions for live dropdown while typing /…
-    func snippetSuggestions(for prefix: String) -> [Snippet] {
-        guard prefix.count >= 2, prefix.hasPrefix("/") else { return [] }
-        let lower = prefix.lowercased()
-        return snippets.filter { $0.trigger.lowercased().hasPrefix(lower) }
-    }
-
     /// Keep `snippetIndex` in sync with `snippets` whenever the array changes.
     private func rebuildSnippetIndex() {
         snippetIndex = Dictionary(
@@ -456,17 +449,27 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func loadItems() {
-        guard let data  = try? Data(contentsOf: saveURL),
-              let saved = try? JSONDecoder().decode([ClipItem].self, from: data)
-        else { seedDefaults(); return }
-        items = saved
+        guard let data = try? Data(contentsOf: saveURL) else { seedDefaults(); return }
+        if let saved = try? JSONDecoder().decode([ClipItem].self, from: data) {
+            items = saved
+        } else {
+            // File exists but is corrupt — back it up so the user can recover it,
+            // then start fresh rather than crashing or silently dropping data.
+            let backup = saveURL.deletingPathExtension()
+                .appendingPathExtension("corrupt.json")
+            try? FileManager.default.moveItem(at: saveURL, to: backup)
+            seedDefaults()
+        }
     }
 
     private func loadSnippets() {
-        if let data  = try? Data(contentsOf: snippetsURL),
-           let saved = try? JSONDecoder().decode([Snippet].self, from: data) {
+        guard let data = try? Data(contentsOf: snippetsURL) else { seedSnippets(); return }
+        if let saved = try? JSONDecoder().decode([Snippet].self, from: data) {
             snippets = saved          // didSet rebuilds index
         } else {
+            let backup = snippetsURL.deletingPathExtension()
+                .appendingPathExtension("corrupt.json")
+            try? FileManager.default.moveItem(at: snippetsURL, to: backup)
             seedSnippets()
         }
     }

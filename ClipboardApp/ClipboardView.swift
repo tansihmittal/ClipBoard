@@ -193,6 +193,7 @@ struct ClipboardView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
                 .focused($searchFocused)
+                .autocorrectionDisabled()
                 .onKeyPress(.downArrow)  { move(1);  return .handled }
                 .onKeyPress(.upArrow)    { move(-1); return .handled }
                 .onKeyPress(.return) {
@@ -239,6 +240,7 @@ struct ClipboardView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
                 .focused($addFocused)
+                .autocorrectionDisabled()
                 .onSubmit { commitAdd() }
             if !addText.isEmpty {
                 Button("Save") { commitAdd() }
@@ -387,13 +389,15 @@ struct ClipboardView: View {
             return
         }
         if !mgr.searchQuery.isEmpty { mgr.searchQuery = ""; return }
-        selectedID = nil
+        if selectedID != nil { selectedID = nil; return }
+        // Nothing left to dismiss — close the popover itself.
+        NotificationCenter.default.post(name: .closePopoverRequest, object: nil)
     }
 
     private func copyItem(_ item: ClipItem) {
         mgr.copyToClipboard(item)
         withAnimation(.spring(response: 0.3)) { copiedID = item.id }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NotificationCenter.default.post(name: .closePopoverRequest, object: nil)
         }
     }
@@ -556,7 +560,7 @@ struct SnippetManagerView: View {
         // Mark consumed so the monitor doesn't record this as a new clip.
         ClipboardManager.shared.markCurrentChangeConsumed()
         withAnimation { copiedSnippetID = snippet.id }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NotificationCenter.default.post(name: .closePopoverRequest, object: nil)
         }
     }
@@ -672,6 +676,7 @@ struct SnippetEditSheet: View {
                                     ? Color.red.opacity(0.5)
                                     : Color.clear, lineWidth: 1)
                     )
+                    .autocorrectionDisabled()
                     .focused($triggerFocused)
                     .onChange(of: snippet.trigger) { _, val in
                         var v = val.hasPrefix("/") ? val : "/" + val

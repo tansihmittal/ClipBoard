@@ -8,8 +8,14 @@ final class OnboardingWindowController {
 
     func show(onComplete: @escaping () -> Void) {
         guard window == nil else { return }
-        let view = OnboardingView {
-            self.close()
+
+        // The app runs as .accessory (no Dock icon), but that policy prevents
+        // windows from receiving focus. Switch to .regular for the duration of
+        // onboarding so the window can appear and be interacted with normally.
+        NSApp.setActivationPolicy(.regular)
+
+        let view = OnboardingView { [weak self] in
+            self?.close()
             onComplete()
         }
         let vc  = NSHostingController(rootView: view)
@@ -30,6 +36,8 @@ final class OnboardingWindowController {
     func close() {
         window?.close()
         window = nil
+        // Return to menu-bar-only mode once onboarding is finished.
+        NSApp.setActivationPolicy(.accessory)
     }
 }
 
@@ -77,6 +85,18 @@ struct OnboardingView: View {
         .onReceive(permTimer) { _ in
             axGranted = AXIsProcessTrusted()
             imGranted = CGPreflightListenEventAccess()
+        }
+        // Auto-open the relevant Settings pane when the user reaches a
+        // permission step and the permission is not yet granted, so they
+        // don't have to hunt for the button themselves.
+        .onChange(of: step) { _, newStep in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                if newStep == 1 && !axGranted {
+                    AppDelegate.openAccessibilitySettings()
+                } else if newStep == 2 && !imGranted {
+                    AppDelegate.openInputMonitoringSettings()
+                }
+            }
         }
     }
 

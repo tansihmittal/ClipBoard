@@ -85,9 +85,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
 
         let onboardingKey = "onboardingComplete"
-        if !UserDefaults.standard.bool(forKey: onboardingKey) {
-            // First launch — show the guided onboarding window.
-            // It handles permission requests in order; we skip auto-prompting.
+        let needsOnboarding = !UserDefaults.standard.bool(forKey: onboardingKey)
+            || (!AXIsProcessTrusted() && !CGPreflightListenEventAccess())
+        if needsOnboarding {
+            // First launch (or permissions were never granted) — show the guided
+            // onboarding window. It handles permission requests in order.
             onboarding = OnboardingWindowController()
             onboarding?.show { [weak self] in
                 UserDefaults.standard.set(true, forKey: onboardingKey)
@@ -249,13 +251,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private func handleGlobalKeyDown(_ event: NSEvent) {
         guard !expansionInProgress else { return }
 
+        // Keyboard shortcuts (Cmd / Option / Control combos) are not text input.
+        // Reset the buffer so "/sig" + Cmd+Z doesn't leave stale state.
+        let actionMods = event.modifierFlags.intersection([.command, .option, .control])
+        guard actionMods.isEmpty else { keyBuffer = ""; return }
+
         guard let chars = event.characters?.lowercased(), !chars.isEmpty else {
             keyBuffer = ""; return
         }
         guard let char = chars.first else { return }
 
-        // Tab (keyCode 48), Space, and Enter are expansion delimiters.
-        let isDelimiter = char.isWhitespace || char.isNewline || event.keyCode == 48
+        // Space, Tab (\t), and Enter are expansion delimiters.
+        let isDelimiter = char.isWhitespace || char.isNewline
         if isDelimiter {
             if !keyBuffer.isEmpty {
                 if let snippet = ClipboardManager.shared.snippetMatch(for: keyBuffer) {
@@ -277,8 +284,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
+    /// Returns true when the currently-focused UI element is a password / secure
+    /// text field. Called only when AX is trusted so the AX API is available.
+    private func focusedElementIsSecure() -> Bool {
+        let sysWide = AXUIElementCreateSystemWide()
+        var appRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            sysWide, kAXFocusedApplicationAttribute as CFString, &appRef
+        ) == .success, let rawApp = appRef else { return false }
+        let focusedApp = rawApp as! AXUIElement
+
+        var elRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            focusedApp, kAXFocusedUIElementAttribute as CFString, &elRef
+        ) == .success, let rawEl = elRef else { return false }
+        let focusedEl = rawEl as! AXUIElement
+
+        var roleRef: CFTypeRef?
+        AXUIElementCopyAttributeValue(focusedEl, kAXRoleAttribute as CFString, &roleRef)
+        return (roleRef as? String) == "AXSecureTextField"
+    }
+
     private func expandSnippet(_ snippet: Snippet, deleteDelimiter: Bool) {
         guard AXIsProcessTrusted() else { return }
+        // Never expand inside password / secure text fields.
+        guard !focusedElementIsSecure() else { keyBuffer = ""; return }
 
         expansionInProgress = true
         let deleteCount = snippet.trigger.count + (deleteDelimiter ? 1 : 0)
